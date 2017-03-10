@@ -40,9 +40,16 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    setContentView(R.layout.activity_chat);
+    input = (EditText) findViewById(R.id.input);
+    Button send = (Button) findViewById(R.id.send_button);
+    send.setOnClickListener(this);
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
+    sender = new Gson().fromJson(getIntent().getStringExtra("sender"), User.class);
+    receiver = new Gson().fromJson(getIntent().getStringExtra("receiver"), User.class);
+    receiverId = receiver.getUid();
+    senderId = sender.getUid();
     mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
     mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
     LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
@@ -50,15 +57,10 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         mLayoutManager.getOrientation());
     mRecyclerView.addItemDecoration(mDividerItemDecoration);
     mRecyclerView.setLayoutManager(mLayoutManager);
-    mAdapter = new ChatAdapter(this, mRecyclerView, chatList);
+    mAdapter = new ChatAdapter(this, mRecyclerView, chatList,senderId);
     mRecyclerView.setAdapter(mAdapter);
-    input = (EditText) findViewById(R.id.input);
-    Button send = (Button) findViewById(R.id.send);
-    send.setOnClickListener(this);
-    sender = new Gson().fromJson(getIntent().getStringExtra("sender"), User.class);
-    receiver = new Gson().fromJson(getIntent().getStringExtra("receiver"), User.class);
-    receiverId = receiver.getUid();
-    senderId = sender.getUid();
+
+
     getMessageFromFirebaseUser(senderId, receiverId);
     getAllChatsFromFirebase(senderId, receiverId);
   }
@@ -151,6 +153,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                       // Chat message is retreived.
                       Chat chat = dataSnapshot.getValue(Chat.class);
+                      Log.e(TAG, "chat: " + room_type_1 + " exists" + chat);
                       chatList.add(chat);
                       mAdapter.notifyDataSetChanged();
                     }
@@ -186,6 +189,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                     public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                       // Chat message is retreived.
                       Chat chat = dataSnapshot.getValue(Chat.class);
+                      Log.e(TAG, "chat: " + room_type_2 + " exists" + chat);
                       chatList.add(chat);
                       mAdapter.notifyDataSetChanged();
                     }
@@ -235,6 +239,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
     chat.setReceiver(receiver.getEmail());
     chat.setTimestamp(new Date().getTime());
     sendMessageToFirebaseUser(getApplicationContext(), chat, "");
+    input.setText("");
   }
 
   public void sendMessageToFirebaseUser(final Context context,
@@ -263,6 +268,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                   .child(room_type_2)
                   .child(String.valueOf(chat.timestamp))
                   .setValue(chat);
+
             } else {
               Log.d("test123", "sendMessageToFirebaseUser: success");
               databaseReference.child("chats_rooms")
@@ -270,6 +276,8 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                   .child(String.valueOf(chat.timestamp))
                   .setValue(chat);
             }
+            chatList.add(chat);
+            mAdapter.notifyDataSetChanged();
           }
 
           @Override

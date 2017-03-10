@@ -254,6 +254,8 @@ public class EmailPasswordActivity extends BaseActivity implements
       findViewById(R.id.signed_in_buttons).setVisibility(View.VISIBLE);
 
       findViewById(R.id.verify_email_button).setEnabled(!user.isEmailVerified());
+      Intent intent = new Intent(EmailPasswordActivity.this, UserActivity.class);
+      startActivity(intent);
     } else {
       mStatusTextView.setText(R.string.signed_out);
       mDetailTextView.setText(null);

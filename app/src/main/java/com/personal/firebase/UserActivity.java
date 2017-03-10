@@ -7,6 +7,7 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
@@ -58,10 +59,10 @@ public class UserActivity extends AppCompatActivity implements UserAdapter.OnIte
             while (dataSnapshots.hasNext()) {
               DataSnapshot dataSnapshotChild = dataSnapshots.next();
               User user = dataSnapshotChild.getValue(User.class);
-//              if (!TextUtils.equals(user.uid, FirebaseAuth.getInstance().getCurrentUser().getUid())) {
+              if (!TextUtils.equals(user.uid, FirebaseAuth.getInstance().getCurrentUser().getUid())) {
               Log.d("test123", "user:" + user);
               users.add(user);
-//              }
+              }
             }
             mAdapter.notifyDataSetChanged();
 

@@ -23,6 +23,7 @@ import android.support.annotation.NonNull;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.LongSparseArray;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -35,179 +36,190 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.Random;
+
 public class AuthenticationActivity extends BaseActivity implements
-    View.OnClickListener {
+        View.OnClickListener {
 
-  private static final String TAG = "Authentication";
+    private static final String TAG = "Authentication";
 
-  private EditText mEmailField;
-  private EditText mPasswordField;
+    private EditText mEmailField;
+    private EditText mPasswordField;
 
-  private FirebaseAuth mAuth;
+    private FirebaseAuth mAuth;
 
-  private FirebaseAuth.AuthStateListener mAuthListener;
+    private FirebaseAuth.AuthStateListener mAuthListener;
 
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_authentication);
-    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-    toolbar.setTitle("Authentication");
-    setSupportActionBar(toolbar);
-    // Views
-    mEmailField = (EditText) findViewById(R.id.field_email);
-    mPasswordField = (EditText) findViewById(R.id.field_password);
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_authentication);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("Authentication");
+        setSupportActionBar(toolbar);
+        // Views
+        mEmailField = (EditText) findViewById(R.id.field_email);
+        mPasswordField = (EditText) findViewById(R.id.field_password);
 
-    // Buttons
-    findViewById(R.id.email_sign_in_button).setOnClickListener(this);
-    findViewById(R.id.email_create_account_button).setOnClickListener(this);
+        // Buttons
+        findViewById(R.id.email_sign_in_button).setOnClickListener(this);
+        findViewById(R.id.email_create_account_button).setOnClickListener(this);
 
-    mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
-    mAuthListener = new FirebaseAuth.AuthStateListener() {
-      @Override
-      public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-        FirebaseUser user = firebaseAuth.getCurrentUser();
-        if (user != null) {
-          Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-        } else {
-          Log.d(TAG, "onAuthStateChanged:signed_out");
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
+                } else {
+                    Log.d(TAG, "onAuthStateChanged:signed_out");
+                }
+                updateUI(user);
+            }
+        };
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthListener);
+    }
+    // [END on_start_add_listener]
+
+    // [START on_stop_remove_listener]
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mAuthListener != null) {
+            mAuth.removeAuthStateListener(mAuthListener);
         }
-        updateUI(user);
-      }
-    };
-  }
-
-  @Override
-  public void onStart() {
-    super.onStart();
-    mAuth.addAuthStateListener(mAuthListener);
-  }
-  // [END on_start_add_listener]
-
-  // [START on_stop_remove_listener]
-  @Override
-  public void onStop() {
-    super.onStop();
-    if (mAuthListener != null) {
-      mAuth.removeAuthStateListener(mAuthListener);
-    }
-  }
-
-  private void createAccount(String email, String password) {
-    Log.d(TAG, "createAccount:" + email);
-    if (!validateForm()) {
-      return;
     }
 
-    showProgressDialog();
+    private void createAccount(String email, String password) {
+        Log.d(TAG, "createAccount:" + email);
+        if (!validateForm()) {
+            return;
+        }
 
-    mAuth.createUserWithEmailAndPassword(email, password)
-        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-          @Override
-          public void onComplete(@NonNull Task<AuthResult> task) {
-            Log.d(TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
+        showProgressDialog();
 
-            if (!task.isSuccessful()) {
-              Toast.makeText(AuthenticationActivity.this, task.getException().getLocalizedMessage(),
-                  Toast.LENGTH_SHORT).show();
-              Log.d(TAG, "createUserWithEmail:onComplete:" + task.getException().getLocalizedMessage());
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        Log.d(TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
 
-            }
-            if (task.isSuccessful()) {
-              addUserToDatabase(getApplicationContext(), FirebaseAuth.getInstance().getCurrentUser());
-            }
-            hideProgressDialog();
-          }
-        });
-  }
+                        if (!task.isSuccessful()) {
+                            Toast.makeText(AuthenticationActivity.this, task.getException().getLocalizedMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "createUserWithEmail:onComplete:" + task.getException().getLocalizedMessage());
 
-  private void signIn(String email, String password) {
-    if (!validateForm()) {
-      return;
+                        }
+                        if (task.isSuccessful()) {
+                            addUserToDatabase(getApplicationContext(), FirebaseAuth.getInstance().getCurrentUser());
+                        }
+                        hideProgressDialog();
+                    }
+                });
     }
 
-    showProgressDialog();
+    private void signIn(String email, String password) {
+        if (!validateForm()) {
+            return;
+        }
 
-    mAuth.signInWithEmailAndPassword(email, password)
-        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-          @Override
-          public void onComplete(@NonNull Task<AuthResult> task) {
-            Log.d(TAG, "signInWithEmail:onComplete:" + task.isSuccessful());
-            if (!task.isSuccessful()) {
-              Log.w(TAG, "signInWithEmail:failed", task.getException());
-              Toast.makeText(AuthenticationActivity.this, R.string.auth_failed,
-                  Toast.LENGTH_SHORT).show();
-            }
-            if (task.isSuccessful()) {
+        showProgressDialog();
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        Log.d(TAG, "signInWithEmail:onComplete:" + task.isSuccessful());
+                        if (!task.isSuccessful()) {
+                            Log.w(TAG, "signInWithEmail:failed", task.getException());
+                            Toast.makeText(AuthenticationActivity.this, R.string.auth_failed,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                        if (task.isSuccessful()) {
 //              Intent intent = new Intent(AuthenticationActivity.this, UserActivity.class);
 //              startActivity(intent);
-            }
+                        }
 
-            hideProgressDialog();
-          }
-        });
-  }
-
-
-  private boolean validateForm() {
-    boolean valid = true;
-
-    String email = mEmailField.getText().toString();
-    if (TextUtils.isEmpty(email)) {
-      mEmailField.setError("Required.");
-      valid = false;
-    } else {
-      mEmailField.setError(null);
+                        hideProgressDialog();
+                    }
+                });
     }
 
-    String password = mPasswordField.getText().toString();
-    if (TextUtils.isEmpty(password)) {
-      mPasswordField.setError("Required.");
-      valid = false;
-    } else {
-      mPasswordField.setError(null);
+
+    private boolean validateForm() {
+        boolean valid = true;
+
+        String email = mEmailField.getText().toString();
+        if (TextUtils.isEmpty(email)) {
+            mEmailField.setError("Required.");
+            valid = false;
+        } else {
+            mEmailField.setError(null);
+        }
+
+        String password = mPasswordField.getText().toString();
+        if (TextUtils.isEmpty(password)) {
+            mPasswordField.setError("Required.");
+            valid = false;
+        } else {
+            mPasswordField.setError(null);
+        }
+
+        return valid;
     }
 
-    return valid;
-  }
-
-  private void updateUI(FirebaseUser user) {
-    hideProgressDialog();
-    if (user != null) {
-      Intent intent = new Intent(AuthenticationActivity.this, UserActivity.class);
-      startActivity(intent);
+    private void updateUI(FirebaseUser user) {
+        hideProgressDialog();
+        if (user != null) {
+            Intent intent = new Intent(AuthenticationActivity.this, UserActivity.class);
+            startActivity(intent);
+        }
     }
-  }
 
-  @Override
-  public void onClick(View v) {
-    int i = v.getId();
-    if (i == R.id.email_create_account_button) {
-      createAccount(mEmailField.getText().toString(), mPasswordField.getText().toString());
-    } else if (i == R.id.email_sign_in_button) {
-      signIn(mEmailField.getText().toString(), mPasswordField.getText().toString());
+    @Override
+    public void onClick(View v) {
+        int i = v.getId();
+        if (i == R.id.email_create_account_button) {
+            createAccount(mEmailField.getText().toString(), mPasswordField.getText().toString());
+        } else if (i == R.id.email_sign_in_button) {
+            signIn(mEmailField.getText().toString(), mPasswordField.getText().toString());
+        }
     }
-  }
 
-  public void addUserToDatabase(Context context, FirebaseUser firebaseUser) {
-    User user = new User(firebaseUser.getUid(),
-        firebaseUser.getEmail(),
-        null);
+    public void addUserToDatabase(Context context, FirebaseUser firebaseUser) {
+        User user = new User(firebaseUser.getUid(),
+                firebaseUser.getEmail(),
+                generateRandomNumber());
 
-    FirebaseDatabase.getInstance()
-        .getReference()
-        .child("users")
-        .child(firebaseUser.getUid())
-        .setValue(user)
-        .addOnCompleteListener(new OnCompleteListener<Void>() {
-          @Override
-          public void onComplete(@NonNull Task<Void> task) {
-            if (task.isSuccessful()) {
-              Intent intent = new Intent(AuthenticationActivity.this, UserActivity.class);
-              startActivity(intent);
-            }
-          }
-        });
-  }
+        FirebaseDatabase.getInstance()
+                .getReference()
+                .child("users")
+                .child(firebaseUser.getUid())
+                .setValue(user)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Intent intent = new Intent(AuthenticationActivity.this, UserActivity.class);
+                            startActivity(intent);
+                        }
+                    }
+                });
+    }
+
+
+    public Long generateRandomNumber() {
+        Random rand = new Random();
+        long num = rand.nextInt(9000000) + 1000000;
+        long sum = rand.nextInt(10);
+        return num + sum;
+    }
+
 }

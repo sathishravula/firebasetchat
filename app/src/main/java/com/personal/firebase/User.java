@@ -3,11 +3,11 @@ package com.personal.firebase;
 public class User {
     public String uid;
     public String email;
-    public String firebaseToken;
+    public long firebaseToken;
 
     public User() {}
 
-    public User(String uid, String email, String firebaseToken) {
+    public User(String uid, String email, long firebaseToken) {
         this.uid = uid;
         this.email = email;
         this.firebaseToken = firebaseToken;
@@ -29,11 +29,11 @@ public class User {
         this.email = email;
     }
 
-    public String getFirebaseToken() {
+    public long getFirebaseToken() {
         return firebaseToken;
     }
 
-    public void setFirebaseToken(String firebaseToken) {
+    public void setFirebaseToken(long firebaseToken) {
         this.firebaseToken = firebaseToken;
     }
 }

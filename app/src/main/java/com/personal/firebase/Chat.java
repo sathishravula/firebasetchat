@@ -1,11 +1,14 @@
 package com.personal.firebase;
 
+import java.net.URI;
+
 public class Chat {
     public String sender;
     public String receiver;
     public String senderUid;
     public String receiverUid;
     public String message;
+    public String path;
     public long timestamp;
 
     public Chat() {}
@@ -17,6 +20,14 @@ public class Chat {
         this.receiverUid = receiverUid;
         this.message = message;
         this.timestamp = timestamp;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public String getSender() {
@@ -65,5 +76,18 @@ public class Chat {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "Chat{" +
+            "sender='" + sender + '\'' +
+            ", receiver='" + receiver + '\'' +
+            ", senderUid='" + senderUid + '\'' +
+            ", receiverUid='" + receiverUid + '\'' +
+            ", message='" + message + '\'' +
+            ", path='" + path + '\'' +
+            ", timestamp=" + timestamp +
+            '}';
     }
 }

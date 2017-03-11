@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      tools:context="com.personal.firebase.UserActivity">
+  <item
+      android:id="@+id/action_attach"
+      android:orderInCategory="100"
+      app:showAsAction="always"
+      android:icon="@drawable/ic_attachment_white_24dp"
+      android:title="attach"/>
+</menu>

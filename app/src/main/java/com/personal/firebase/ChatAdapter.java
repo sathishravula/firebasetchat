@@ -3,12 +3,20 @@ package com.personal.firebase;
 import android.content.Context;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
+import com.firebase.ui.storage.images.FirebaseImageLoader;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.text.Format;
 import java.text.SimpleDateFormat;
@@ -24,12 +32,15 @@ public class ChatAdapter extends RecyclerView.Adapter {
   private final String senderId;
   private Context context;
   private boolean loading;
+  FirebaseStorage storage;
   private List<Chat> chatList = new ArrayList<>();
 
   public ChatAdapter(Context applicationContext, RecyclerView recyclerView, List<Chat> chatList, String senderId) {
     context = applicationContext;
     this.chatList = chatList;
     this.senderId = senderId;
+    storage = FirebaseStorage.getInstance();
+
 
   }
 
@@ -70,6 +81,18 @@ public class ChatAdapter extends RecyclerView.Adapter {
       LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
           LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 //      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.FILL_PARENT);
+      if (TextUtils.isEmpty(chat.getPath()))
+        holder.image.setVisibility(View.GONE);
+      else {
+        Log.d("test1234","url:"+chat.getPath());
+        StorageReference httpsReference = storage.getReferenceFromUrl("https://firebasestorage.googleapis.com"+chat.getPath());
+        holder.image.setVisibility(View.VISIBLE);
+        Glide.with(context)
+            .using(new FirebaseImageLoader())
+            .load(httpsReference)
+            .into(holder.image);
+      }
+
       if (senderId.equalsIgnoreCase(chat.getSenderUid())) {
         params.gravity = Gravity.END;
       } else
@@ -86,14 +109,16 @@ public class ChatAdapter extends RecyclerView.Adapter {
 
 
   public static class ChatViewHolder extends RecyclerView.ViewHolder {
-    private final TextView  message, timeSatmp;
+    private final TextView message, timeSatmp;
     private final CardView root;
+    private final ImageView image;
 
     ChatViewHolder(View v, Context context) {
       super(v);
       root = (CardView) v.findViewById(R.id.card_view);
 //      senderName = (TextView) v.findViewById(R.id.sender_name);
       message = (TextView) v.findViewById(R.id.message);
+      image = (ImageView) v.findViewById(R.id.image);
       timeSatmp = (TextView) v.findViewById(R.id.timestamp);
 
     }

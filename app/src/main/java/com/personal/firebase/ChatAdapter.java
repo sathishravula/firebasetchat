@@ -10,7 +10,10 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.text.Format;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -60,16 +63,16 @@ public class ChatAdapter extends RecyclerView.Adapter {
     if (viewHolder instanceof ChatViewHolder) {
       Chat chat = chatList.get(position);
       ChatViewHolder holder = (ChatViewHolder) viewHolder;
-      holder.senderName.setText(chat.getSender());
+//      holder.senderName.setText(chat.getSender());
       holder.message.setText(chat.getMessage());
-      holder.timeSatmp.setText("" + chat.getTimestamp());
+      holder.timeSatmp.setText(convertTime(chat.getTimestamp()));
 //      LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.root.getLayoutParams();
       LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
           LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 //      LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.FILL_PARENT);
-      if (senderId.equalsIgnoreCase(chat.getReceiverUid()))
+      if (senderId.equalsIgnoreCase(chat.getSenderUid())) {
         params.gravity = Gravity.END;
-      else
+      } else
         params.gravity = Gravity.START;
 
       holder.root.setLayoutParams(params);
@@ -83,19 +86,25 @@ public class ChatAdapter extends RecyclerView.Adapter {
 
 
   public static class ChatViewHolder extends RecyclerView.ViewHolder {
-    private final TextView senderName, message, timeSatmp;
+    private final TextView  message, timeSatmp;
     private final CardView root;
 
     ChatViewHolder(View v, Context context) {
       super(v);
       root = (CardView) v.findViewById(R.id.card_view);
-      senderName = (TextView) v.findViewById(R.id.sender_name);
+//      senderName = (TextView) v.findViewById(R.id.sender_name);
       message = (TextView) v.findViewById(R.id.message);
       timeSatmp = (TextView) v.findViewById(R.id.timestamp);
 
     }
 
 
+  }
+
+  public String convertTime(long time) {
+    Date date = new Date(time);
+    Format format = new SimpleDateFormat("yyyy MM dd HH:mm:ss");
+    return format.format(date);
   }
 }
 

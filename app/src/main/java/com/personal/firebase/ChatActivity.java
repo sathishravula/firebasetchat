@@ -3,7 +3,6 @@ package com.personal.firebase;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -45,22 +44,25 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
     Button send = (Button) findViewById(R.id.send_button);
     send.setOnClickListener(this);
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-    setSupportActionBar(toolbar);
     sender = new Gson().fromJson(getIntent().getStringExtra("sender"), User.class);
     receiver = new Gson().fromJson(getIntent().getStringExtra("receiver"), User.class);
+    toolbar.setTitle(receiver.getEmail());
+    setSupportActionBar(toolbar);
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    getSupportActionBar().setDisplayShowHomeEnabled(true);
     receiverId = receiver.getUid();
     senderId = sender.getUid();
     mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-    mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+//    mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
     LinearLayoutManager mLayoutManager = new LinearLayoutManager(this);
-    DividerItemDecoration mDividerItemDecoration = new DividerItemDecoration(mRecyclerView.getContext(),
-        mLayoutManager.getOrientation());
-    mRecyclerView.addItemDecoration(mDividerItemDecoration);
+//    DividerItemDecoration mDividerItemDecoration = new DividerItemDecoration(mRecyclerView.getContext(),
+//        mLayoutManager.getOrientation());
+//    mRecyclerView.addItemDecoration(mDividerItemDecoration);
+    mLayoutManager.setStackFromEnd(true);
+
     mRecyclerView.setLayoutManager(mLayoutManager);
-    mAdapter = new ChatAdapter(this, mRecyclerView, chatList,senderId);
+    mAdapter = new ChatAdapter(this, mRecyclerView, chatList, senderId);
     mRecyclerView.setAdapter(mAdapter);
-
-
     getMessageFromFirebaseUser(senderId, receiverId);
     getAllChatsFromFirebase(senderId, receiverId);
   }
@@ -112,7 +114,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
 //              }
             }
             mAdapter.notifyDataSetChanged();
-
+            mRecyclerView.scrollToPosition(chatList.size() - 1);
 
             // All users are retrieved except the one who is currently logged
             // in device.
@@ -128,6 +130,12 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
   @Override
   public void onItemClick(View view, int position) {
 
+  }
+
+  @Override
+  public boolean onSupportNavigateUp() {
+    onBackPressed();
+    return true;
   }
 
   public void getMessageFromFirebaseUser(String senderUid, String receiverUid) {
@@ -156,6 +164,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                       Log.e(TAG, "chat: " + room_type_1 + " exists" + chat);
                       chatList.add(chat);
                       mAdapter.notifyDataSetChanged();
+                      mRecyclerView.scrollToPosition(chatList.size()-1);
                     }
 
                     @Override
@@ -192,6 +201,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                       Log.e(TAG, "chat: " + room_type_2 + " exists" + chat);
                       chatList.add(chat);
                       mAdapter.notifyDataSetChanged();
+                      mRecyclerView.scrollToPosition(chatList.size()-1);
                     }
 
                     @Override
@@ -278,6 +288,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
             }
             chatList.add(chat);
             mAdapter.notifyDataSetChanged();
+            mRecyclerView.scrollToPosition(chatList.size() - 1);
           }
 
           @Override
@@ -286,6 +297,4 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
           }
         });
   }
-
-
 }

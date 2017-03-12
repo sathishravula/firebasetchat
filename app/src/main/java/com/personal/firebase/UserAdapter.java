@@ -23,7 +23,6 @@ public class UserAdapter extends RecyclerView.Adapter {
   private List<User> userList = new ArrayList<>();
 
   public UserAdapter(Context applicationContext, OnItemClickListener onItemClickListener, RecyclerView recyclerView, List<User> userList) {
-    Log.d("test", "DoctorsAdapter: ");
     context = applicationContext;
     this.onItemClickListener = onItemClickListener;
     this.userList = userList;

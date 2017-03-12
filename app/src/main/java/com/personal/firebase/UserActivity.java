@@ -23,11 +23,13 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 public class UserActivity extends BaseActivity implements UserAdapter.OnItemClickListener {
 
   private RecyclerView mRecyclerView;
   List<User> users = new ArrayList<>();
+  private User currentUser;
   private UserAdapter mAdapter;
 
   @Override
@@ -65,6 +67,8 @@ public class UserActivity extends BaseActivity implements UserAdapter.OnItemClic
               if (!TextUtils.equals(user.uid, FirebaseAuth.getInstance().getCurrentUser().getUid())) {
                 Log.d("test123", "user:" + user);
                 users.add(user);
+              }else{
+                currentUser=user;
               }
             }
             mAdapter.notifyDataSetChanged();
@@ -85,11 +89,7 @@ public class UserActivity extends BaseActivity implements UserAdapter.OnItemClic
   @Override
   public void onItemClick(View view, int position) {
     Intent intent = new Intent(this, ChatActivity.class);
-    FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-    User user = new User();
-    user.setEmail(firebaseUser.getEmail());
-    user.setUid(firebaseUser.getUid());
-    intent.putExtra("sender", new Gson().toJson(user));
+    intent.putExtra("sender", new Gson().toJson(currentUser));
     intent.putExtra("receiver", new Gson().toJson(users.get(position)));
     startActivity(intent);
 
@@ -124,4 +124,12 @@ public class UserActivity extends BaseActivity implements UserAdapter.OnItemClic
 
     return super.onOptionsItemSelected(item);
   }
+
+  public long generateRandomId() {
+    Random random = new Random();
+    long num = random.nextInt(100000) + random.nextInt(100000);
+    return num;
+  }
+
+
 }

@@ -39,7 +39,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.StreamDownloadTask;
 import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
 
@@ -77,9 +76,6 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         Button send = (Button) findViewById(R.id.send_button);
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mLayoutManager = new LinearLayoutManager(this);
-//        mLayoutManager.setStackFromEnd(true);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-
         storage = FirebaseStorage.getInstance();
         storageRef = storage.getReference();
         send.setOnClickListener(this);
@@ -92,14 +88,11 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         receiverId = receiver.getUid();
         senderId = sender.getUid();
-        if (sender.getFirebaseToken() <= receiver.getFirebaseToken()) {
-            chatRoom = sender.getFirebaseToken() + "_" + receiver.getFirebaseToken();
+        if (sender.getCustomId() <= receiver.getCustomId()) {
+            chatRoom = sender.getCustomId() + "_" + receiver.getCustomId();
         } else {
-            chatRoom = receiver.getFirebaseToken() + "_" + sender.getFirebaseToken();
+            chatRoom = receiver.getCustomId() + "_" + sender.getCustomId();
         }
-        setUpRecycleView();
-//        getAllChatsFromFirebase(senderId, receiverId);
-//        getMessageFromFirebaseUser(senderId, receiverId);
         chatRoomRef = FirebaseDatabase.getInstance()
                 .getReference()
                 .child("chats_rooms").child(chatRoom);
@@ -125,7 +118,6 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                 if (TextUtils.isEmpty(chat.getPath()))
                     holder.image.setVisibility(View.GONE);
                 else {
-                    Log.d("test1234", "url:" + chat.getPath());
                     StorageReference httpsReference = storage.getReferenceFromUrl("https://firebasestorage.googleapis.com" + chat.getPath());
                     holder.image.setVisibility(View.VISIBLE);
                     Glide.with(getApplicationContext())
@@ -139,13 +131,15 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                 } else
                     params.gravity = Gravity.START;
 
-//                holder.root.setLayoutParams(params);
+                holder.root.setLayoutParams(params);
             }
         };
 
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
+                Log.d("test1234", "positionStart:"+positionStart+" itemCount"+itemCount);
+
                 super.onItemRangeInserted(positionStart, itemCount);
                 int friendlyMessageCount = mFirebaseAdapter.getItemCount();
                 int lastVisiblePosition = mLayoutManager.findLastCompletelyVisibleItemPosition();
@@ -157,7 +151,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
                 }
             }
         });
-
+        mLayoutManager.setStackFromEnd(true);
         mRecyclerView.setLayoutManager(mLayoutManager);
         mRecyclerView.setAdapter(mFirebaseAdapter);
 
@@ -168,7 +162,7 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         private final CardView root;
         private final ImageView image;
 
-        MessageViewHolder(View v, Context context) {
+        MessageViewHolder(View v) {
             super(v);
             root = (CardView) v.findViewById(R.id.card_view);
 //      senderName = (TextView) v.findViewById(R.id.sender_name);
@@ -186,65 +180,6 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         return format.format(date);
     }
 
-    private void setUpRecycleView() {
-        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        mLayoutManager = new LinearLayoutManager(this);
-        mLayoutManager.setStackFromEnd(true);
-        mRecyclerView.setLayoutManager(mLayoutManager);
-        mAdapter = new ChatAdapter(this, mRecyclerView, chatList, senderId);
-        mRecyclerView.setAdapter(mAdapter);
-    }
-
-    public void getAllChatsFromFirebase(String senderId, String receiverId) {
-        FirebaseDatabase.getInstance()
-                .getReference()
-                .child("chats_rooms")
-                .child(senderId + "_" + receiverId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        Iterator<DataSnapshot> dataSnapshots = dataSnapshot.getChildren()
-                                .iterator();
-                        while (dataSnapshots.hasNext()) {
-                            DataSnapshot dataSnapshotChild = dataSnapshots.next();
-                            Chat chat = dataSnapshotChild.getValue(Chat.class);
-                            chatList.add(chat);
-                        }
-                        mAdapter.notifyDataSetChanged();
-
-
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        // Unable to retrieve the users.
-                    }
-                });
-
-        FirebaseDatabase.getInstance()
-                .getReference()
-                .child("chats_rooms")
-                .child(receiverId + "_" + senderId)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        Iterator<DataSnapshot> dataSnapshots = dataSnapshot.getChildren()
-                                .iterator();
-                        while (dataSnapshots.hasNext()) {
-                            DataSnapshot dataSnapshotChild = dataSnapshots.next();
-                            Chat chat = dataSnapshotChild.getValue(Chat.class);
-                            chatList.add(chat);
-                        }
-                        mAdapter.notifyDataSetChanged();
-                        mRecyclerView.scrollToPosition(chatList.size() - 1);
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        // Unable to retrieve the users.
-                    }
-                });
-    }
 
     @Override
     public void onItemClick(View view, int position) {
@@ -257,102 +192,6 @@ public class ChatActivity extends AppCompatActivity implements UserAdapter.OnIte
         return true;
     }
 
-    public void getMessageFromFirebaseUser(String senderUid, String receiverUid) {
-        final String room_type_1 = senderUid + "_" + receiverUid;
-        final String room_type_2 = receiverUid + "_" + senderUid;
-
-        final DatabaseReference databaseReference = FirebaseDatabase.getInstance()
-                .getReference();
-
-        databaseReference.child("chats_rooms")
-                .getRef()
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.hasChild(room_type_1)) {
-                            Log.d(TAG, "getMessageFromFirebaseUser 1: " + room_type_1 + " exists");
-                            FirebaseDatabase.getInstance()
-                                    .getReference()
-                                    .child("")
-                                    .child(room_type_1).
-                                    limitToLast(1).addChildEventListener(new ChildEventListener() {
-                                @Override
-                                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                                    // Chat message is retreived.
-                                    Chat chat = dataSnapshot.getValue(Chat.class);
-                                    Log.e(TAG, "chat: " + room_type_1 + " exists" + chat);
-                                    chatList.add(chat);
-                                    mAdapter.notifyDataSetChanged();
-                                    mRecyclerView.scrollToPosition(chatList.size() - 1);
-                                }
-
-                                @Override
-                                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-                                }
-
-                                @Override
-                                public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                                }
-
-                                @Override
-                                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-                                }
-
-                                @Override
-                                public void onCancelled(DatabaseError databaseError) {
-                                    // Unable to get message.
-                                }
-                            });
-                        } else if (dataSnapshot.hasChild(room_type_2)) {
-                            Log.d(TAG, "getMessageFromFirebaseUser 2: " + room_type_2 + " exists");
-                            FirebaseDatabase.getInstance()
-                                    .getReference()
-                                    .child("chats_rooms")
-                                    .child(room_type_2).limitToLast(1).addChildEventListener(new ChildEventListener() {
-                                @Override
-                                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                                    // Chat message is retreived.
-                                    Chat chat = dataSnapshot.getValue(Chat.class);
-                                    Log.d(TAG, "chat: " + room_type_2 + " exists" + chat);
-                                    chatList.add(chat);
-                                    mAdapter.notifyDataSetChanged();
-                                    mRecyclerView.scrollToPosition(chatList.size() - 1);
-                                }
-
-                                @Override
-                                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-                                }
-
-                                @Override
-                                public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                                }
-
-                                @Override
-                                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-                                }
-
-                                @Override
-                                public void onCancelled(DatabaseError databaseError) {
-                                    // Unable to get message.
-                                }
-                            });
-                        } else {
-                            Log.d(TAG, "getMessageFromFirebaseUser: no such room available");
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                        // Unable to get message
-                    }
-                });
-    }
 
     @Override
     public void onClick(View v) {
